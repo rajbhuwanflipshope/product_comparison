@@ -1,16 +1,18 @@
 {
   "manifest_version": 3,
   "name": "SmartPrice Matcher",
-  "version": "1.2",
-  "description": "Finds the exact product you're looking at on other e-commerce stores.",
+  "version": "2.0",
+  "description": "Finds the exact product you're looking at on other e-commerce stores using background tabs.",
   "permissions": [
     "activeTab",
+    "tabs",
     "storage"
   ],
   "host_permissions": [
     "*://*.amazon.in/*",
     "*://*.flipkart.com/*",
-    "http://127.0.0.1:5000/*"
+    "*://*.croma.com/*",
+    "*://*.reliancedigital.in/*"
   ],
   "background": {
     "service_worker": "background.js"
