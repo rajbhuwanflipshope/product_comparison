@@ -33,27 +33,48 @@
 }
 
 #sp-widget-container {
+  display: block;
   position: fixed;
   right: 60px;
   top: 50%;
   transform: translateY(-50%) translateX(20px);
   width: 320px;
-  background: #18181b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  background: #18181b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
   z-index: 2147483647;
-  font-family: 'Inter', sans-serif;
-  color: #fff;
+  font-family: 'Inter', sans-serif !important;
+  color: #fff !important;
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left !important;
 }
 
 #sp-widget-container.sp-open {
   transform: translateY(-50%) translateX(0);
   opacity: 1;
   pointer-events: auto;
+}
+
+/* SAFE RESET: Only kill pseudo-content and force font, don't kill layout */
+#sp-widget-container *, 
+#sp-widget-container *::before, 
+#sp-widget-container *::after {
+  font-family: 'Inter', sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  content: none !important; /* Kills Croma's font icons/emojis */
+}
+
+/* Ensure SVG icons and Close button still show up */
+#sp-widget-container svg, 
+#sp-widget-container svg * {
+  content: normal !important;
+}
+#sp-close-btn {
+  content: '×' !important;
 }
 
 .sp-header {

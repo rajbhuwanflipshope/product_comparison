@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "SmartPrice Matcher",
+  "name": "Flipshope PriceComparision",
   "version": "2.0",
   "description": "Finds the exact product you're looking at on other e-commerce stores using background tabs.",
   "permissions": [
@@ -13,7 +13,7 @@
     "*://*.flipkart.com/*",
     "*://*.croma.com/*",
     "*://*.reliancedigital.in/*",
-    "https://teamdev.flipshope.com/*"
+    "https://team.flipshope.com/*"
   ],
   "background": {
     "service_worker": "background.js"

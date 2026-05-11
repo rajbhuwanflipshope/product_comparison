@@ -14,8 +14,8 @@ const STORE_NAMES = {
 
 // --- ATTRIBUTE EXTRACTION LOGIC ---
 function extractAttributes(title) {
-  const brands = ['apple', 'samsung', 'vivo', 'oppo', 'oneplus', 'xiaomi', 'redmi', 'realme', 'poco', 'motorola', 'google', 'nothing', 'iqoo', 'asus', 'nokia'];
-  const baseColors = ['black', 'white', 'blue', 'green', 'red', 'grey', 'gray', 'orange', 'silver', 'gold', 'purple', 'yellow', 'pink', 'lavender', 'titanium', 'graphite', 'cream', 'phantom', 'mint', 'cyan', 'magenta', 'violet'];
+  const brands = ['cmf by nothing', 'apple', 'samsung', 'vivo', 'oppo', 'oneplus', 'xiaomi', 'redmi', 'realme', 'poco', 'motorola', 'google', 'nothing', 'iqoo', 'asus', 'nokia', 'infinix', 'tecno', 'itel', 'honor', 'lava', 'micromax', 'cmf'];
+  const baseColors = ['black', 'white', 'blue', 'green', 'red', 'grey', 'gray', 'orange', 'silver', 'gold', 'purple', 'yellow', 'pink', 'lavender', 'titanium', 'graphite', 'cream', 'phantom', 'mint', 'cyan', 'magenta', 'violet', 'sunshower', 'rainy night', 'rainforest'];
   
   const details = { brand: '', model: '', ram: '', storage: '', color: '' };
   const rawQuery = title.toLowerCase();
@@ -35,46 +35,128 @@ function extractAttributes(title) {
     details.ram = gbValues[0].str;
     details.storage = gbValues[gbValues.length - 1].str;
   } else if (gbValues.length === 1) {
-    if (rawQuery.includes('ram')) details.ram = gbValues[0].str;
-    else details.storage = gbValues[0].str;
+    // If only one is found, check keywords to decide if it's RAM or Storage
+    if (rawQuery.includes('ram')) {
+      details.ram = gbValues[0].str;
+    } else {
+      details.storage = gbValues[0].str;
+    }
   }
 
-  // 2. Extract Brand
+  // Fallback: Handle X/Y GB pattern (e.g., 8/128, 12/256, 8GB+128GB)
+  if (!details.ram || !details.storage) {
+    const slashMatch = rawQuery.match(/\b(\d{1,2})\s*\/\s*(\d{2,4})\b/);
+    if (slashMatch) {
+      if (!details.ram) details.ram = slashMatch[1] + 'GB';
+      if (!details.storage) details.storage = slashMatch[2] + 'GB';
+    }
+    const plusMatch = rawQuery.match(/\b(\d{1,2})gb\s*\+\s*(\d{2,4})gb\b/i);
+    if (plusMatch) {
+      if (!details.ram) details.ram = plusMatch[1] + 'GB';
+      if (!details.storage) details.storage = plusMatch[2] + 'GB';
+    }
+  }
+
+  // 2.  // Match brand
   for (const b of brands) {
     if (rawQuery.includes(b)) {
-      details.brand = b.charAt(0).toUpperCase() + b.slice(1);
-      break;
+       // Proper Case the brand
+       details.brand = b.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+       break;
     }
   }
 
   // 3. Extract Color
+  const poeticColors = [
+    // Pixel Colors
+    'obsidian', 'indigo', 'frost', 'limoncello', 'porcelain', 'moonstone', 'jade', 'berry', 'mint', 'wintergreen', 'peony', 'hazel', 'rose quartz', 'iris', 'rose', 'bay', 'aloe', 'snow', 'lemongrass', 'charcoal', 'sea', 'coral', 'stormy black', 'sorta seafoam', 'kinda coral', 'cloudy white', 'sorta sunny', 'chalk', 'sage', 'just black', 'sorta sage', 'mostly black', 'clearly white', 'barely blue',
+    // Samsung Colors
+    'phantom black', 'phantom white', 'phantom gray', 'phantom silver', 'phantom navy', 'phantom titanium', 'graphite', 'titanium black', 'titanium gray', 'titanium violet', 'titanium yellow', 'phantom blue', 'sky blue', 'ice blue', 'cloud blue', 'sierra blue', 'icy blue', 'blue black', 'phantom green', 'lime', 'khaki', 'awesome green', 'phantom violet', 'bora purple', 'lavender', 'lilac purple', 'pink gold', 'rose gold', 'burgundy', 'mystic gold', 'champagne gold', 'cream', 'ivory', 'beige', 'sand', 'amber yellow', 'mystic black', 'mystic white', 'mystic bronze', 'mystic blue', 'mystic gray', 'mystic red', 'mystic green', 'awesome black', 'awesome white', 'awesome blue', 'awesome violet', 'awesome peach', 'awesome lime', 'awesome graphite', 'mirror purple', 'mirror black', 'mirror gold', 'gray green',
+    // Others
+    'cosmic orange', 'cosmic', 'sunshower', 'rainy night', 'rainy', 'night', 'rainforest', 'forest', 'velvet', 'ultramarine', 'desert', 'volcano', 'nebula', 'glacier', 'starlight', 'midnight', 'mist', 'titanium', 'phantom', 'emerald', 'copper', 'olive', 'sapphire', 'teal', 'indigo', 'bronze', 'peach', 'slate', 'aqua', 'pearl', 'maroon', 'rose', 'lilac', 'cobalt', 'violet', 'voilet', 'navy', 'carbon', 'coral', 'limestone', 'winter'
+  ];
+  const extendedColors = [...baseColors, ...poeticColors];
   const colorSegments = [];
   
-  // A. Check inside parentheses first
-  const parenMatch = title.match(/\((.*?)\)/);
-  if (parenMatch) colorSegments.push(...parenMatch[1].split(','));
+  // A. Check inside parentheses
+  const parenMatches = [...title.matchAll(/\((.*?)\)/g)];
+  for (const m of parenMatches) {
+    const content = m[1].toLowerCase();
+    // If it contains a color word, it's a color segment
+    if (extendedColors.some(c => content.includes(c))) {
+       colorSegments.push(m[1]);
+    }
+  }
   
-  // B. Check comma-separated chunks of the whole title
-  colorSegments.push(...title.split(','));
-
-  const extendedColors = [...baseColors, 'navy', 'carbon', 'starlight', 'midnight', 'copper', 'olive', 'sapphire', 'teal', 'indigo', 'burgundy', 'bronze', 'peach', 'sand', 'slate', 'aqua', 'pearl', 'maroon', 'ivory', 'rose', 'lilac', 'cobalt', 'violet', 'voilet', 'lavender', 'titanium', 'graphite', 'phantom', 'cream', 'mint', 'emerald', 'obsidian', 'porcelain', 'hazel', 'bay', 'coral', 'sea', 'charcoal', 'limestone', 'winter', 'mist', 'frost', 'berry'];
+  // B. Check chunks separated by common delimiters
+  colorSegments.push(...title.split(/[,|\-;]/));
 
   for (const part of colorSegments) {
     const p = part.trim();
-    // A color segment usually has no numbers, is longer than 2 chars, and isn't a generic word
-    if (!/\d+/.test(p) && p.length > 2) {
+    if (!/\d{3,}/.test(p) && p.length > 2) {
        const pLower = p.toLowerCase();
-       if (pLower === 'mobile phone' || pLower === 'smartphone' || pLower === 'dual sim') continue;
+       if (pLower === 'mobile phone' || pLower === 'smartphone' || pLower === 'dual sim' || pLower.includes('storage')) continue;
        
-       // If this segment contains any known color word, assume the WHOLE segment is the color name!
-       if (extendedColors.some(c => pLower.includes(c))) {
-           details.color = p;
+       // Special check: If this segment contains 'Phone' and we are looking at 'Nothing' or 'CMF', it might be the model
+       const isNothingRelated = details.brand.toLowerCase().includes('nothing') || details.brand.toLowerCase() === 'cmf';
+       if (isNothingRelated && pLower.includes('phone')) continue;
+
+       // If this segment contains any known color word, find the exact color word!
+       const foundColor = extendedColors.find(c => pLower.includes(c));
+       if (foundColor) {
+           // CLEANUP: If the segment is long, it might contain brand/model info.
+           // Let's strip brand and common fluff from the color string.
+           let cleanColor = p;
+           if (details.brand) {
+               cleanColor = cleanColor.replace(new RegExp('\\b' + details.brand + '\\b', 'gi'), '');
+           }
+           // Strip common series names
+           const seriesFluff = ['phone', 'pixel', 'galaxy', 'iphone', 'pro', 'max', 'plus', 'ultra', 'moto', 'edge', 'series'];
+           seriesFluff.forEach(sf => {
+               cleanColor = cleanColor.replace(new RegExp('\\b' + sf + '\\b', 'gi'), '');
+           });
+
+           // Strip any standalone numbers (like model '10' or '25')
+           cleanColor = cleanColor.replace(/\b\d+[a-z]?\b/gi, ' ');
+           
+           // Strip ANY words that were part of the detected model name (to avoid '9A Porcelain')
+           if (details.model) {
+               const modelWords = details.model.toLowerCase().split(/\s+/);
+               modelWords.forEach(mw => {
+                   if (mw.length > 1) {
+                       cleanColor = cleanColor.replace(new RegExp('\\b' + mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+                   }
+               });
+           }
+           
+           details.color = cleanColor.replace(/[,\(\)\|:;\-\+]/g, ' ').replace(/\s+/g, ' ').trim();
+           // Ensure it starts with a capital letter
+           if (details.color) {
+               details.color = details.color.charAt(0).toUpperCase() + details.color.slice(1);
+           }
            break;
        }
     }
   }
 
-  // C. Fallback to scanning individual words
+  // C. Fallback: Multi-word scanning for specific requested colors
+  if (!details.color) {
+    const lowerTitle = title.toLowerCase();
+    const specificMultiWords = [
+      // Samsung & Pixel Complex Colors
+      'phantom black', 'phantom white', 'phantom gray', 'phantom silver', 'phantom navy', 'phantom titanium', 'titanium black', 'titanium gray', 'titanium violet', 'titanium yellow', 'phantom blue', 'sky blue', 'ice blue', 'cloud blue', 'sierra blue', 'icy blue', 'blue black', 'phantom green', 'awesome green', 'phantom violet', 'bora purple', 'lilac purple', 'pink gold', 'rose gold', 'mystic gold', 'champagne gold', 'amber yellow', 'mystic black', 'mystic white', 'mystic bronze', 'mystic blue', 'mystic gray', 'mystic red', 'mystic green', 'awesome black', 'awesome white', 'awesome blue', 'awesome violet', 'awesome peach', 'awesome lime', 'awesome graphite', 'mirror purple', 'mirror black', 'mirror gold', 'gray green',
+      'rose quartz', 'stormy black', 'sorta seafoam', 'kinda coral', 'cloudy white', 'sorta sunny', 'just black', 'sorta sage', 'mostly black', 'clearly white', 'barely blue',
+      'cosmic orange', 'sunshower', 'rainy night', 'rainforest', 'black velvet', 'desert titanium'
+    ];
+    for (const smw of specificMultiWords) {
+      if (lowerTitle.includes(smw)) {
+        details.color = smw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        break;
+      }
+    }
+  }
+
+  // D. Fallback to scanning individual words
   if (!details.color) {
     const words = title.split(/\s+/);
     for (let i = 0; i < words.length; i++) {
@@ -82,14 +164,14 @@ function extractAttributes(title) {
         if (extendedColors.includes(w)) {
             if (i > 0) {
                const prev = words[i-1].toLowerCase().replace(/[^a-z]/g, '');
-               const ignorePrev = ['gb', 'tb', 'mb', 'ram', 'rom', 'storage', 'smartphone', 'mobile', 'phone', '5g', '4g', 'with', 'and'];
+               const ignorePrev = ['gb', 'tb', 'mb', 'ram', 'rom', 'storage', 'smartphone', 'mobile', 'phone', '5g', '4g', 'with', 'and', 'for', 'model'];
                // If the previous word isn't a spec/fluff, it's likely a color modifier (e.g. "Awesome Iceblue")
                if (!ignorePrev.includes(prev) && !/\d+/.test(words[i-1])) {
-                  details.color = words[i-1] + ' ' + words[i];
+                  details.color = words[i-1].charAt(0).toUpperCase() + words[i-1].slice(1) + ' ' + words[i].charAt(0).toUpperCase() + words[i].slice(1);
                   break;
                }
             }
-            details.color = words[i];
+            details.color = words[i].charAt(0).toUpperCase() + words[i].slice(1);
             break;
         }
     }
@@ -98,26 +180,46 @@ function extractAttributes(title) {
   // 4. Extract Model (The "Clean Sweep")
   let modelPart = title;
   
-  // IMMEDIATELY discard all promotional text after pipes, hyphens, parentheses, or keywords 'with'/'by'
-  // Example: "Galaxy S25 5G with Galaxy AI" -> "Galaxy S25 5G"
-  modelPart = modelPart.split(/\|| - | \(|\bwith\b|\bby\b/i)[0].trim();
+  // Special handling for Nothing/CMF brand which uses parentheses in model names like "Phone (2a)"
+  let splitRegex = /\|| - | \(|:|\bwith\b|\bby\b/i;
+  const isNothingRelated = details.brand && (details.brand.toLowerCase().includes('nothing') || details.brand.toLowerCase() === 'cmf');
+  if (isNothingRelated && /phone\s*\(.*?\)/i.test(title)) {
+    // If there's a word right after the parentheses like "Pro", we want to keep it too.
+    splitRegex = /\|| - |:|\bwith\b|\bby\b/i;
+  }
+  modelPart = modelPart.split(splitRegex)[0].trim();
   
   // A. Remove Brand
   if (details.brand) modelPart = modelPart.replace(new RegExp('\\b' + details.brand + '\\b', 'gi'), '');
   
-  // B. Remove anything inside remaining parentheses (just in case)
-  modelPart = modelPart.replace(/\(.*?\)/g, ' ');
+  // B. Remove anything inside remaining parentheses (unless it's a Nothing/CMF model part)
+  if (!(isNothingRelated && /phone\s*\(.*?\)/i.test(modelPart))) {
+    modelPart = modelPart.replace(/\(.*?\)/g, ' ');
+  }
 
   // C. Remove ALL specs
   modelPart = modelPart.replace(/\b\d+\s*(?:GB|TB|MB|RAM|ROM)\b/gi, '');
   
+  // D. Remove standalone RAM/Storage numbers (e.g. "128" in "GT 30 128")
+  if (details.ram) {
+    const rVal = details.ram.replace(/\D/g, '');
+    modelPart = modelPart.replace(new RegExp('\\b' + rVal + '\\b', 'g'), '');
+  }
+  if (details.storage) {
+    const sVal = details.storage.replace(/\D/g, '');
+    modelPart = modelPart.replace(new RegExp('\\b' + sVal + '\\b', 'g'), '');
+  }
+
   // Extra strict clean for spec words left behind
-  modelPart = modelPart.replace(/\b(?:ram|rom|storage|memory)\b/gi, '');
+  modelPart = modelPart.replace(/\b(?:ram|rom|storage|memory|5g\+?|4g)\b/gi, '');
+
+  // F. Remove measurements (e.g. 15.93 cm, 6.3")
+  modelPart = modelPart.replace(/\b\d+(?:\.\d+)?\s*(?:cm|inch|inches|")\b/gi, '');
   
   // D. Remove the specific Extracted Color string
   if (details.color) {
      const safeColor = details.color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-     modelPart = modelPart.replace(new RegExp(safeColor, 'gi'), '');
+     modelPart = modelPart.replace(new RegExp('\\b' + safeColor + '\\b', 'gi'), '');
   }
 
   // E. Remove ALL raw color words (Fallback)
@@ -128,15 +230,38 @@ function extractAttributes(title) {
   // E. Remove common fluff words and store names
   const fluff = [
     'amazon.in', 'amazon', 'flipkart', 'croma', 'reliance', 'digital', 'buy', 'online', 'price', 'india', 'at', 'best', 'in',
-    'smartphone', 'mobile', 'phone', '5g', '4g', 'unlocked', 'dual sim', 'display', 'promotion', 'front', 'back', 'camera', 'ai', 'with', 'built-in', 'privacy'
+    'smartphone', 'mobile', 'phone', 'unlocked', 'dual sim', 'display', 'promotion', 'front', 'back', 'camera', 'ai', 'with', 'built-in', 'privacy'
   ];
   fluff.forEach(word => {
+    // Only remove 'phone' if it's NOT a Nothing/CMF product (where Phone is the model)
+    if (word === 'phone' && isNothingRelated) return;
     modelPart = modelPart.replace(new RegExp('\\b' + word.replace('.', '\\.') + '\\b', 'gi'), '');
   });
 
   // Clean punctuation and trim
-  details.model = modelPart.replace(/[,\(\)\|:;\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  details.model = modelPart.replace(/[,\(\)\|:;\-\+]/g, ' ').replace(/\s+/g, ' ').trim();
   
+  // --- FINAL CROSS-CLEANING PASS ---
+  // Ensure model words aren't in the color, and color words aren't in the model
+  if (details.color && details.model) {
+      const modelWords = details.model.toLowerCase().split(/\s+/);
+      let cleanColor = details.color;
+      modelWords.forEach(mw => {
+          if (mw.length > 1) {
+              cleanColor = cleanColor.replace(new RegExp('\\b' + mw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+          }
+      });
+      // Final color cleanup: remove any remaining special characters or fluff
+      details.color = cleanColor.replace(/[,\(\)\|:;\-\+]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (details.color) {
+          details.color = details.color.charAt(0).toUpperCase() + details.color.slice(1);
+      }
+
+      // Re-clean model just in case the color string removal left artifacts
+      const safeColor = details.color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      details.model = details.model.replace(new RegExp('\\b' + safeColor + '\\b', 'gi'), '').replace(/\s+/g, ' ').trim();
+  }
+
   return details;
 }
 
@@ -147,10 +272,11 @@ function isModelMatch(candidateTitle, target) {
   const targetModel = target.model.toLowerCase().replace(/5g|4g|smartphone|mobile|phone/g, '').trim();
   const modelWords = targetModel.split(/\s+/).filter(w => w.length > 1);
   
-  // Typo-tolerant matching: Require 75% of model words to match
+  // Require exact word matches for model parts (to avoid '12' matching '128GB')
   let matchCount = 0;
   for (const word of modelWords) {
-    if (title.includes(word)) matchCount++;
+    const reg = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    if (reg.test(candidateTitle)) matchCount++;
   }
   
   if (modelWords.length > 2) {
@@ -170,7 +296,27 @@ function isModelMatch(candidateTitle, target) {
   return true;
 }
 
+function isAccessory(title, targetModel = "") {
+  const accessoryKeywords = [
+    'case', 'cover', 'tempered', 'glass', 'charger', 'adapter', 'cable', 
+    'earphone', 'headphone', 'pouch', 'skin', 'guard', 'protector', 'lens',
+    'strap', 'band', 'film', 'buds', 'drive', 'stick', 'thumb', 'flash', 'usb', 
+    'memory', 'pen', 'card', 'reader', 'hub', 'dock'
+  ];
+  const titleLower = title.toLowerCase();
+  const targetLower = targetModel.toLowerCase();
+  
+  return accessoryKeywords.some(kw => {
+    const reg = new RegExp('\\b' + kw + '\\b', 'i');
+    // If candidate has accessory keyword but target model doesn't, it's an accessory
+    return reg.test(titleLower) && !reg.test(targetLower);
+  });
+}
+
 function isStrictMatch(candidateTitle, target) {
+  // If it's an accessory (and target isn't), it's not an exact match
+  if (isAccessory(candidateTitle, target.model)) return false;
+
   if (!isModelMatch(candidateTitle, target)) return false;
   
   // Normalize both by removing ALL spaces and punctuation for spec matching
@@ -220,7 +366,7 @@ function injectFAB() {
   widget.id = "sp-widget-container";
   widget.innerHTML = `
     <div class="sp-header">
-      <div class="sp-title">SmartPrice Matcher</div>
+      <div class="sp-title">Flipshope PriceComparision</div>
       <button class="sp-close" id="sp-close-btn">&times;</button>
     </div>
     <div class="sp-body">
@@ -268,7 +414,7 @@ function injectFAB() {
     
     document.getElementById("sp-ui-brand").innerText = globalTargetDetails.brand || 'N/A';
     document.getElementById("sp-ui-model").innerText = globalTargetDetails.model || 'Unknown';
-    document.getElementById("sp-ui-specs").innerText = `${globalTargetDetails.ram ? globalTargetDetails.ram + ' RAM | ' : ''}${globalTargetDetails.storage || ''} ${globalTargetDetails.color ? '| ' + globalTargetDetails.color : ''}`;
+    document.getElementById("sp-ui-specs").innerText = `${globalTargetDetails.ram || ''} ${globalTargetDetails.storage || ''} ${globalTargetDetails.color || ''}`.replace(/\s+/g, ' ').trim();
     
     document.getElementById("sp-start-scan").disabled = !globalTargetDetails.brand && !globalTargetDetails.model;
   });
@@ -308,8 +454,12 @@ function injectFAB() {
         if (pid && !data.find(x => x.pid === pid)) data.push({ pid, sid });
     }
 
+    const ramVal = globalTargetDetails.ram ? globalTargetDetails.ram.replace(/\D/g, '') : '';
+    const storageVal = globalTargetDetails.storage ? globalTargetDetails.storage.replace(/\D/g, '') : '';
+    const fullModel = `${globalTargetDetails.model} ${ramVal} ${storageVal}`.replace(/\s+/g, ' ').trim();
+
     const payload = {
-        model: globalTargetDetails.model,
+        model: fullModel,
         brand: globalTargetDetails.brand,
         priceComparisonData: data
     };
@@ -379,7 +529,7 @@ function renderResults(results) {
             </div>
             <span class="sp-view-btn">View Match</span>
           </a>
-          <button title="Remove wrong match" onmouseover="this.style.color='#ef4444';" onmouseout="this.style.color='#a1a1aa';" onclick="this.closest('.sp-store-card-wrapper').outerHTML = \`<div class='sp-store-card sp-not-found'><div class='sp-store-info' style='display:flex; align-items:center;'><img src='${iconUrl}' class='sp-store-icon' style='margin-right:8px;'><span class='sp-store-name' style='font-weight:bold;'>${storeName}</span></div><span class='sp-view-btn'>Removed</span></div>\`;" style="position: absolute; right: 8px; background:none; border:none; color:#a1a1aa; cursor:pointer; font-size:18px; line-height:1; padding:4px; display:flex; align-items:center; z-index: 10;">&times;</button>
+          <button title="Remove wrong match" class="sp-cancel-btn" data-store="${storeId}" data-name="${storeName}" data-icon="${iconUrl}" style="position: absolute; right: 8px; background:none; border:none; color:#a1a1aa; cursor:pointer; font-size:18px; line-height:1; padding:4px; display:flex; align-items:center; z-index: 10;">&times;</button>
         </div>
       `;
     } else if (links.variant) {
@@ -398,7 +548,7 @@ function renderResults(results) {
             </div>
             <span class="sp-view-btn">View Variant</span>
           </a>
-          <button title="Remove wrong match" onmouseover="this.style.color='#ef4444';" onmouseout="this.style.color='#a1a1aa';" onclick="this.closest('.sp-store-card-wrapper').outerHTML = \`<div class='sp-store-card sp-not-found'><div class='sp-store-info' style='display:flex; align-items:center;'><img src='${iconUrl}' class='sp-store-icon' style='margin-right:8px;'><span class='sp-store-name' style='font-weight:bold;'>${storeName}</span></div><span class='sp-view-btn'>Removed</span></div>\`;" style="position: absolute; right: 8px; background:none; border:none; color:#a1a1aa; cursor:pointer; font-size:18px; line-height:1; padding:4px; display:flex; align-items:center; z-index: 10;">&times;</button>
+          <button title="Remove wrong match" class="sp-cancel-btn" data-store="${storeId}" data-name="${storeName}" data-icon="${iconUrl}" style="position: absolute; right: 8px; background:none; border:none; color:#a1a1aa; cursor:pointer; font-size:18px; line-height:1; padding:4px; display:flex; align-items:center; z-index: 10;">&times;</button>
         </div>
       `;
     } else {
@@ -418,10 +568,34 @@ function renderResults(results) {
   if (variantHtml) html += `<div class="sp-section-label">Other Variants</div>` + variantHtml;
 
   resultsDiv.innerHTML = html;
-  document.getElementById("sp-loading").style.display = "none";
-  resultsDiv.style.display = "flex";
   
   globalCurrentResults = results;
+  
+  // Attach event listeners in the extension context
+  const cancelBtns = resultsDiv.querySelectorAll('.sp-cancel-btn');
+  cancelBtns.forEach(btn => {
+      btn.addEventListener('mouseover', function() { this.style.color = '#ef4444'; });
+      btn.addEventListener('mouseout', function() { this.style.color = '#a1a1aa'; });
+      btn.addEventListener('click', function() {
+          const sId = this.getAttribute('data-store');
+          const sName = this.getAttribute('data-name');
+          const sIcon = this.getAttribute('data-icon');
+          if (globalCurrentResults && globalCurrentResults[sId]) {
+              delete globalCurrentResults[sId];
+          }
+          this.closest('.sp-store-card-wrapper').outerHTML = `
+            <div class='sp-store-card sp-not-found' style='opacity: 0.4; filter: grayscale(0.8); background: rgba(0,0,0,0.2);'>
+              <div class='sp-store-info' style='display:flex; align-items:center;'>
+                <img src='${sIcon}' class='sp-store-icon' style='margin-right:8px; opacity: 0.5;'>
+                <span class='sp-store-name' style='font-weight:bold; color: #71717a;'>${sName}</span>
+              </div>
+              <span class='sp-view-btn' style='background: #27272a; color: #52525b;'>Removed</span>
+            </div>`;
+      });
+  });
+
+  document.getElementById("sp-loading").style.display = "none";
+  resultsDiv.style.display = "flex";
   
   const startBtn = document.getElementById("sp-start-scan");
   startBtn.style.display = "block";
