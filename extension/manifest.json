@@ -6,19 +6,31 @@
   "permissions": [
     "activeTab",
     "tabs",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "*://*.amazon.in/*",
+    "http://localhost:5000/*",
     "*://*.flipkart.com/*",
     "*://*.croma.com/*",
     "*://*.reliancedigital.in/*",
-    "https://team.flipshope.com/*"
+    "https://team.flipshope.com/*",
+    "https://teamdev.flipshope.com/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
+  "action": {},
   "content_scripts": [
+    {
+      "matches": [
+        "*://*.flipkart.com/*"
+      ],
+      "js": ["blocker.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": [
         "*://*.amazon.in/*", 
@@ -28,7 +40,8 @@
         "*://*.reliancedigital.in/*"
       ],
       "css": ["styles.css"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_start"
     }
   ]
 }
