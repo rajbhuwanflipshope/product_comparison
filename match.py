@@ -162,7 +162,7 @@ def extract_details(raw_query):
     raw_query = re.sub(r'(\d+)(pro|mini|plus|max|lite|ultra|neo|fe|se)\b', r'\1 \2', raw_query, flags=re.IGNORECASE)
     raw_query = re.sub(r'\s+', ' ', raw_query)
     brands = ['apple', 'samsung', 'vivo', 'oppo', 'oneplus', 'xiaomi', 'redmi', 'realme', 'poco', 'motorola', 'google', 'nothing', 'iqoo', 'asus', 'nokia', 'lenovo', 'honor', 'mi', 'ai+']
-    base_colors = ['black', 'white', 'blue', 'green', 'red', 'grey', 'gray', 'orange', 'silver', 'gold', 'purple', 'yellow', 'pink', 'lavender', 'titanium', 'graphite', 'cream', 'phantom', 'mint', 'cyan', 'magenta', 'violet', 'noir', 'starry', 'lunar', 'lunar dust', 'dream', 'azure']
+    base_colors = ['black', 'white', 'blue', 'green', 'red', 'grey', 'gray', 'orange', 'silver', 'gold', 'purple', 'yellow', 'pink', 'lavender', 'titanium', 'graphite', 'cream', 'phantom', 'mint', 'cyan', 'magenta', 'violet', 'noir', 'starry', 'lunar', 'lunar dust', 'dream', 'azure', 'jewel', 'golden', 'glow']
     
     details = {'brand': '', 'model': '', 'ram': '', 'storage': '', 'color': '', 'category': 'smartphone', 'processor': '', 'year': '', 'generation': ''}
     
@@ -312,12 +312,13 @@ def extract_details(raw_query):
         temp_query = temp_query[:split_match.start()]
     
     temp_query = temp_query.replace('-', ' ')
+    temp_query = re.sub(r'\b\d+nm\b', ' ', temp_query, flags=re.IGNORECASE)
 
     temp_query = re.sub(r'\b(?:5g\+?|4g\+?|lte|3g|2g)\b', ' ', temp_query, flags=re.IGNORECASE)
     temp_query = re.sub(r'(?<!\w)\+(?!\w)', ' ', temp_query)
     temp_query = re.sub(r'[,\(\)]', ' ', temp_query)
     model_words = temp_query.split()
-    fluff_words = ['tablet', 'display', 'chip', 'amazon', 'flipkart', 'croma', 'reliance', 'digital', 'calling', 'only', 'buy', 'android', 'smartphone', 'mobile', 'phone', 'unlocked', 'dual', 'sim', 'spec', 'specs']
+    fluff_words = ['tablet', 'display', 'chip', 'amazon', 'flipkart', 'croma', 'reliance', 'digital', 'calling', 'only', 'buy', 'android', 'smartphone', 'mobile', 'phone', 'unlocked', 'dual', 'sim', 'spec', 'specs', 'support', 'fingerprint', 'gps', 'wifi', 'wi-fi', 'bluetooth', 'nfc', 'charger', 'battery', 'camera', 'screen', 'hd', 'hd+', 'fhd', 'fhd+', 'qhd', 'qhd+', 'amoled', 'lcd', 'ips']
     model_words = [w for w in model_words if w.lower() not in fluff_words]
     model_clean = ' '.join(model_words)
     model_clean = re.sub(r'\b\+\b', ' ', model_clean)

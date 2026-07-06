@@ -215,7 +215,7 @@ function extractAttributes(title) {
 
   // 3. Extract Color
   const poeticColors = [
-    'starry', 'lunar', 'lunar dust', 'dream', 'azure',
+    'starry', 'lunar', 'lunar dust', 'dream', 'azure', 'jewel', 'golden', 'glow',
     // Pixel Colors
     'obsidian', 'indigo', 'frost', 'limoncello', 'porcelain', 'moonstone', 'jade', 'berry', 'mint', 'wintergreen', 'peony', 'hazel', 'rose quartz', 'iris', 'rose', 'bay', 'aloe', 'snow', 'lemongrass', 'charcoal', 'sea', 'coral', 'stormy black', 'sorta seafoam', 'kinda coral', 'cloudy white', 'sorta sunny', 'chalk', 'sage', 'just black', 'sorta sage', 'mostly black', 'clearly white', 'barely blue',
     // Samsung Colors
@@ -388,17 +388,22 @@ function extractAttributes(title) {
     modelPart = modelPart.replace(new RegExp('\\b' + c + '\\b', 'gi'), '');
   });
 
+  // Strip nm chip specifications (e.g. 6nm, 4nm)
+  modelPart = modelPart.replace(/\b\d+nm\b/gi, ' ');
+
   // E. Remove common fluff words and store names
   const fluff = [
     'amazon.in', 'amazon', 'flipkart', 'croma', 'reliance', 'digital', 'buy', 'online', 'price', 'india', 'at', 'best', 'in',
     'smartphone', 'mobile', 'phone', 'unlocked', 'dual', 'sim', 'display', 'promotion', 'front', 'back', 'camera', 'ai', 'with', 'built-in', 'privacy',
     'prime edition', 'prime', 'limited edition', 'special edition',
-    'snapdragon', 'mediatek', 'dimensity', 'helio', 'unisoc', 'exynos', 'bionic', 'processor'
+    'snapdragon', 'mediatek', 'dimensity', 'helio', 'unisoc', 'exynos', 'bionic', 'processor',
+    'support', 'fingerprint', 'gps', 'wifi', 'wi-fi', 'bluetooth', 'nfc', 'charger', 'battery', 'screen',
+    'hd', 'hd+', 'fhd', 'fhd+', 'qhd', 'qhd+', 'amoled', 'lcd', 'ips', 'chip'
   ];
   fluff.forEach(word => {
     // Only remove 'phone' if it's NOT a Nothing/CMF product (where Phone is the model)
     if (word === 'phone' && isNothingRelated) return;
-    modelPart = modelPart.replace(new RegExp('\\b' + word.replace('.', '\\.') + '\\b', 'gi'), '');
+    modelPart = modelPart.replace(new RegExp('\\b' + word.replace(/[.+*?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), '');
   });
 
   // Clean punctuation and trim (preserve trailing '+' for models like S24+)
